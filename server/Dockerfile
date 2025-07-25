@@ -1,4 +1,4 @@
-# server/Dockerfile
+# Use Python 3.11 slim image
 FROM python:3.11-slim
 
 # Set working directory
@@ -8,30 +8,29 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    make \
+    libffi-dev \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements/prod.txt requirements/prod.txt
-RUN pip install --no-cache-dir -r requirements/prod.txt
+# Upgrade pip and install build tools
+RUN pip install --upgrade pip setuptools wheel
 
-# Copy source code
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies with verbose output
+RUN pip install --no-cache-dir --verbose -r requirements.txt
+
+# Copy application code
 COPY . .
 
-# Create sessions directory
-RUN mkdir -p sessions logs
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+USER appuser
 
-# Set Python path
-ENV PYTHONPATH=/app/src
+# Expose port (Railway will set PORT env var)
+EXPOSE $PORT
 
-# Expose port
-EXPOSE 8000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8000/health || exit 1
-
-# Run the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-# ---
-
+# Start command
+CMD ["python", "app.py"]
