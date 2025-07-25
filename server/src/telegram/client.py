@@ -2,15 +2,15 @@
 import asyncio
 import logging
 from typing import Optional
+from pathlib import Path
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 from telethon.errors import FloodWaitError, SessionPasswordNeededError
-from .config import telegram_settings
 
 logger = logging.getLogger(__name__)
 
 class TelegramClientManager:
-    """Quản lý Telegram client singleton"""
+    """Telegram client singleton manager"""
     
     def __init__(self):
         self._client: Optional[TelegramClient] = None
@@ -26,7 +26,7 @@ class TelegramClientManager:
         return self._connected and self._client and self._client.is_connected()
         
     async def initialize(self) -> TelegramClient:
-        """Khởi tạo và kết nối Telegram client"""
+        """Initialize and connect Telegram client"""
         if self._client is None:
             async with self._lock:
                 if self._client is None:
@@ -34,51 +34,81 @@ class TelegramClientManager:
         return self._client
         
     async def _create_client(self):
-        """Tạo client và kết nối"""
+        """Create client and connect"""
         try:
-            # Chọn session type
-            if telegram_settings.session_string:
-                logger.info("Sử dụng StringSession từ biến môi trường")
-                session = StringSession(telegram_settings.session_string)
+            # Import settings here to avoid circular imports
+            from src.core.config import settings
+            
+            # Validate credentials
+            if not settings.telegram_api_id or not settings.telegram_api_hash:
+                raise ValueError("Missing Telegram API credentials")
+            
+            # Choose session type
+            if settings.telegram_session_string:
+                logger.info("Using StringSession from environment")
+                session = StringSession(settings.telegram_session_string)
             else:
-                session_file = f"{telegram_settings.session_dir}/session"
-                logger.info(f"Sử dụng file session: {session_file}")
-                session = session_file
+                # Create sessions directory if it doesn't exist
+                session_dir = Path("server/sessions")
+                session_dir.mkdir(parents=True, exist_ok=True)
                 
-            # Tạo client
+                session_file = session_dir / "session"
+                logger.info(f"Using file session: {session_file}")
+                session = str(session_file)
+                
+            # Create client
             self._client = TelegramClient(
                 session,
-                telegram_settings.api_id,
-                telegram_settings.api_hash,
-                flood_sleep_threshold=telegram_settings.flood_sleep_threshold
+                settings.telegram_api_id,
+                settings.telegram_api_hash,
+                flood_sleep_threshold=60,
+                auto_reconnect=True,
+                connection_retries=5,
+                retry_delay=1,
+                timeout=30
             )
             
-            # Kết nối
-            await self._client.start(phone=telegram_settings.phone)
+            # Connect with timeout
+            logger.info("Connecting to Telegram...")
+            await asyncio.wait_for(self._client.connect(), timeout=30)
+            
+            # Check if authorized
+            if not await self._client.is_user_authorized():
+                if settings.telegram_session_string:
+                    logger.error("Session string is invalid or expired!")
+                    raise ValueError("Invalid session string")
+                else:
+                    logger.error("Not authorized! Need to login with phone number.")
+                    raise ValueError("Not authorized")
+            
             self._connected = True
             
-            # Lấy thông tin user để xác nhận
+            # Get user info to confirm
             me = await self._client.get_me()
-            logger.info(f"Đã kết nối Telegram: {me.first_name} (@{me.username})")
+            logger.info(f"✅ Connected to Telegram as: {me.first_name} (@{me.username}) - ID: {me.id}")
             
+        except asyncio.TimeoutError:
+            logger.error("Telegram connection timeout!")
+            raise
         except SessionPasswordNeededError:
-            logger.error("Tài khoản có bật 2FA. Cần nhập password!")
+            logger.error("Account has 2FA enabled. Password required!")
             raise
         except Exception as e:
-            logger.error(f"Lỗi kết nối Telegram: {e}")
+            logger.error(f"Failed to connect to Telegram: {e}")
+            self._connected = False
             raise
             
     async def disconnect(self):
-        """Ngắt kết nối client"""
+        """Disconnect client"""
         if self._client and self._client.is_connected():
             await self._client.disconnect()
             self._connected = False
-            logger.info("Đã ngắt kết nối Telegram")
+            logger.info("Disconnected from Telegram")
             
     async def send_message_safe(self, chat_id: int, message: str, max_retries: int = 3):
-        """Gửi tin nhắn với retry logic"""
+        """Send message with retry logic"""
         if not self.is_connected:
-            raise Exception("Telegram client chưa kết nối")
+            raise Exception("Telegram client not connected")
             
         for attempt in range(max_retries):
             try:
@@ -86,13 +116,13 @@ class TelegramClientManager:
             except FloodWaitError as e:
                 if attempt == max_retries - 1:
                     raise
-                wait_time = min(e.seconds, 300)  # Tối đa 5 phút
-                logger.warning(f"FloodWait {e.seconds}s, chờ {wait_time}s...")
+                wait_time = min(e.seconds, 300)  # Max 5 minutes
+                logger.warning(f"FloodWait {e.seconds}s, waiting {wait_time}s...")
                 await asyncio.sleep(wait_time)
             except Exception as e:
                 if attempt == max_retries - 1:
                     raise
-                logger.warning(f"Lỗi gửi tin (thử {attempt+1}/{max_retries}): {e}")
+                logger.warning(f"Send error (attempt {attempt+1}/{max_retries}): {e}")
                 await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
 # Singleton instance
