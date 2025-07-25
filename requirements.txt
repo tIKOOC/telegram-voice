@@ -2,28 +2,28 @@
 flask==2.3.3
 flask-cors==4.0.0
 
-# WebSocket support for real-time communication
+# WebSocket support
 flask-socketio==5.3.6
 python-socketio==5.9.0
 
-# Telegram client library
+# Telegram client
 telethon==1.31.1
 
-# Environment variables management
+# Environment variables
 python-dotenv==1.0.0
 
-# HTTP requests (if needed for APIs)
+# HTTP requests
 requests==2.31.0
 
-# Production WSGI server
+# Production server
 gunicorn==21.2.0
-
-# Async support for SocketIO
 eventlet==0.33.3
 
-# Cryptography for Telegram (required by telethon)
+# Cryptography for Telegram
 cryptography==41.0.7
-
-# Additional dependencies that might be needed
 pyaes==1.6.1
 rsa==4.9
+
+# Additional common dependencies
+aiohttp==3.8.6
+asyncio==3.4.3

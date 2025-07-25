@@ -16,21 +16,26 @@ RUN apt-get update && apt-get install -y \
 # Upgrade pip and install build tools
 RUN pip install --upgrade pip setuptools wheel
 
-# Copy requirements first for better caching
+# Copy requirements file
 COPY requirements.txt .
 
-# Install Python dependencies with verbose output
-RUN pip install --no-cache-dir --verbose -r requirements.txt
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY . .
+# Copy server code
+COPY server/ ./server/
+COPY src/ ./src/
 
-# Create non-root user for security
+# Copy any other necessary files
+COPY .env.example .env
+COPY setup.sh ./
+
+# Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port (Railway will set PORT env var)
+# Expose port
 EXPOSE $PORT
 
-# Start command
-CMD ["python", "app.py"]
+# Start command - adjust path based on your main file
+CMD ["python", "server/app.py"]
