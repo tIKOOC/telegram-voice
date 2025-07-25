@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: telegram-voice-reply
+    runtime: python
+    plan: starter  # $7/tháng
+    buildCommand: pip install -r requirements/prod.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    
+    # Auto-deploy từ GitHub
+    repo: https://github.com/username/telegram-voice-reply
+    branch: main
+    rootDir: server
+    
+    # Environment variables
+    envVars:
+      - key: TELEGRAM_API_ID
+        sync: false  # Set manually trong dashboard
+      - key: TELEGRAM_API_HASH  
+        sync: false
+      - key: TELEGRAM_PHONE
+        sync: false
+      - key: TELEGRAM_SESSION_STRING
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true  # Auto-generate
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+# Optional: Database
+databases:
+  - name: postgres-db
+    databaseName: telegram_db
+    user: api_user
+    plan: free  # 90 ngày miễn phí

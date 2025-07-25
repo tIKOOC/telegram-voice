@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Voice Reply</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Porcupine Wake Word -->
+    <script src="https://cdn.jsdelivr.net/npm/@picovoice/web-voice-processor/dist/iife/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@picovoice/porcupine-web/dist/iife/index.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+    <h2>Voice Commands</h2>
+    <div class="command-list">
+        
+        <!-- Pattern 1: Index-based (Recommended) -->
+        <div class="command-item priority">
+            <strong>"Reply to 3 hello there"</strong>
+            <p>✅ Trả lời tin số 3 (Khuyến nghị)</p>
+        </div>
+        
+        <!-- Pattern 2: Name with delimiter -->  
+        <div class="command-item">
+            <strong>"Reply to Alice saying hello"</strong>
+            <p>⚠️ Trả lời theo tên (cần nói rõ)</p>
+        </div>
+        
+        <!-- Pattern 3: Vietnamese alternative -->
+        <div class="command-item">
+            <strong>"Trả lời số 3 xin chào"</strong>
+            <p>🇻🇳 Lệnh tiếng Việt</p>
+        </div>
+        
+        <!-- Pattern 4: Utility commands -->
+        <div class="command-item">
+            <strong>"List messages"</strong>
+            <p>📋 Hiển thị tin nhắn gần đây</p>
+        </div>
+        
+    </div>
+    
+    <!-- Tips section -->
+    <div class="tips">
+        <h3>💡 Tips:</h3>
+        <ul>
+            <li>Dùng <strong>số</strong> thay vì tên để tránh nhầm lẫn</li>
+            <li>Nói <strong>rõ ràng</strong> và <strong>chậm</strong></li>
+            <li>Chờ tín hiệu <strong>"Ready"</strong> trước khi nói</li>
+        </ul>
+    </div>
+</div>
+
+    <div class="main">
+        <h1>🎤 Telegram Voice Reply</h1>
+        <p id="status">Loading...</p>
+
+        <div class="section">
+            <h3>📝 Transcript:</h3>
+            <p id="transcriptText">Chưa có transcript</p>
+        </div>
+
+        <div class="section">
+            <h3>📊 System Logs:</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

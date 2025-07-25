@@ -1,0 +1,7 @@
+-r base.txt
+gunicorn==21.2.0
+telethon
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic-settings

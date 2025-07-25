@@ -1,0 +1,26 @@
+# server/requirements/base.txt
+# Core dependencies
+telethon
+fastapi==0.104.1
+uvicorn[standard]==0.24.0  
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+websockets==12.0
+asyncio-mqtt==0.16.1
+httpx==0.25.2
+
+# Async support
+asyncio-mqtt==0.16.1
+aiofiles==23.2.1
+
+# HTTP client
+httpx==0.25.2
+
+# Database (optional)
+sqlalchemy==2.0.23
+alembic==1.13.1
+asyncpg==0.29.0
+
+# Utilities
+python-multipart==0.0.6
+pytz==2023.3
