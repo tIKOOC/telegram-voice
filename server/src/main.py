@@ -35,7 +35,16 @@ async def lifespan(app: FastAPI):
     global app_initialized, initialization_error, initialization_start_time
     
     initialization_start_time = asyncio.get_event_loop().time()
+    
+    # Startup logging
+    logger.info("=" * 50)
     logger.info("🚀 Starting Telegram Voice Reply Server...")
+    logger.info(f"🌍 Environment: {os.getenv('RAILWAY_ENVIRONMENT', 'local')}")
+    logger.info(f"🔧 Debug mode: {settings.debug}")
+    logger.info(f"🚪 Port: {os.getenv('PORT', settings.port)}")
+    logger.info(f"📍 Health check: /health")
+    logger.info(f"🔌 WebSocket: /ws")
+    logger.info("=" * 50)
     
     # Start initialization in background to not block health checks
     init_task = asyncio.create_task(initialize_app())
@@ -227,18 +236,8 @@ async def internal_error_handler(request: Request, exc):
 app.include_router(websocket_router, prefix="/ws")
 app.include_router(api_router, prefix="/api")
 
-# Startup logging
-@app.on_event("startup")
-async def startup_event():
-    """Log startup information"""
-    logger.info("=" * 50)
-    logger.info("🚀 FastAPI server started")
-    logger.info(f"🌍 Environment: {os.getenv('RAILWAY_ENVIRONMENT', 'local')}")
-    logger.info(f"🔧 Debug mode: {settings.debug}")
-    logger.info(f"🚪 Port: {os.getenv('PORT', settings.port)}")
-    logger.info(f"📍 Health check: /health")
-    logger.info(f"🔌 WebSocket: /ws")
-    logger.info("=" * 50)
+# Remove the deprecated @app.on_event decorator
+# Startup logging is now handled in the lifespan context manager
 
 if __name__ == "__main__":
     import uvicorn
