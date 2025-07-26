@@ -1,15 +1,18 @@
-// client/app.js - Complete Frontend Integration (Railway Compatible)
-// Preserves ALL existing functionality with Railway deployment fixes
+// client/app.js - FIXED VERSION with correct Railway backend URL
 
 // ===== CONFIGURATION =====
-// Smart server detection for both development and Railway deployment
+// CRITICAL FIX: Point to Railway backend, NOT Vercel!
 const SERVER = (() => {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return "http://localhost:8000"; // Development
   } else {
-    return `https://${window.location.hostname}`; // Railway production
+    // REPLACE WITH YOUR ACTUAL RAILWAY URL!
+    return "https://telegram-voice-production.up.railway.app"; // Your Railway backend
   }
 })();
+
+// If you set VITE_SERVER_URL in Vercel, use it
+const BACKEND_URL = import.meta.env?.VITE_SERVER_URL || SERVER;
 
 const PORCUPINE_KEY = import.meta.env?.VITE_PORCUPINE_KEY;
 const HF_TOKEN = import.meta.env?.VITE_HF_TOKEN;
@@ -22,7 +25,7 @@ const transcriptEl = document.getElementById("transcriptText");
 // ===== GLOBAL STATE =====
 let recentMsgs = [];  // [{idx, chat_id, sender, text}]
 let nextIdx = 1;      // tăng dần, không reset khi reload
-let ws = null;        // WebSocket connection (keeping your original WebSocket approach)
+let ws = null;        // WebSocket connection
 let mediaRecorder, audioChunks = [];
 let audioContext, analyser, micSource, silenceTimer;
 
@@ -60,7 +63,6 @@ function speakFeedback(text) {
 }
 
 // ===== MESSAGE MANAGEMENT =====
-// PRESERVING YOUR EXACT FUNCTION
 function addMessage(chat_id, sender, text){
   recentMsgs.unshift({idx: nextIdx++, chat_id: parseInt(chat_id), sender, text});
   if(recentMsgs.length>20) recentMsgs.pop();
@@ -68,7 +70,6 @@ function addMessage(chat_id, sender, text){
   const div = document.createElement("div");
   div.innerText = `#${recentMsgs[0].idx} | ${sender}: ${text}`;
   
-  // Enhanced styling while preserving your logic
   div.style.cssText = `
     margin: 8px 0; 
     padding: 12px; 
@@ -78,7 +79,6 @@ function addMessage(chat_id, sender, text){
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   `;
   
-  // Create inbox if it doesn't exist
   let inboxEl = document.getElementById("inbox");
   if (!inboxEl) {
     inboxEl = document.createElement("div");
@@ -98,20 +98,18 @@ function addMessage(chat_id, sender, text){
   
   inboxEl.prepend(div);
   
-  // Voice feedback
   speakFeedback(`Tin số ${recentMsgs[0].idx} từ ${sender}.`);
   log(`📨 New message #${recentMsgs[0].idx} from ${sender}: ${text.substring(0, 50)}...`);
 }
 
 // ===== WEBSOCKET MANAGEMENT =====
-// PRESERVING YOUR EXACT WebSocket approach but with Railway-compatible URLs
 function connectWebSocket() {
-  // Convert HTTP to WebSocket URL for Railway compatibility
+  // Use the Railway backend URL for WebSocket
   let wsUrl;
-  if (SERVER.startsWith('https://')) {
-    wsUrl = SERVER.replace('https://', 'wss://') + '/ws';
+  if (BACKEND_URL.startsWith('https://')) {
+    wsUrl = BACKEND_URL.replace('https://', 'wss://') + '/ws';
   } else {
-    wsUrl = SERVER.replace('http://', 'ws://') + '/ws';
+    wsUrl = BACKEND_URL.replace('http://', 'ws://') + '/ws';
   }
   
   log(`🔌 Connecting to WebSocket: ${wsUrl}`);
@@ -158,7 +156,7 @@ function connectWebSocket() {
   };
 }
 
-// PRESERVING YOUR WebSocket message handling
+// Handle WebSocket messages
 function handleWebSocketMessage(data) {
   const messageType = data.type || 'unknown';
   
@@ -188,12 +186,11 @@ function handleWebSocketMessage(data) {
 }
 
 // ===== TELEGRAM API =====
-// Enhanced version of your sendReply function with Railway compatibility
 async function sendReply(chat_id, text) {
   try {
     updateStatus("Sending reply...", "info");
     
-    const response = await fetch(`${SERVER}/api/send`, {
+    const response = await fetch(`${BACKEND_URL}/api/send`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -228,12 +225,11 @@ async function sendReply(chat_id, text) {
 }
 
 // ===== VOICE COMMAND PROCESSING =====
-// PRESERVING YOUR EXACT handleTranscript function with enhancements
 function handleTranscript(raw){
   const txt = raw.trim().toLowerCase();
   log(`🎤 Processing: "${raw}"`);
 
-  // ----- Mẫu ❶: reply to <tên> -----
+  // Pattern 1: reply to <name>
   let m = txt.match(/reply to ([\w\s]+?) (.+)/i);
   if(m){
      const target = m[1].trim();
@@ -249,7 +245,7 @@ function handleTranscript(raw){
      return;
   }
 
-  // ----- Mẫu ❷: reply to <số> / trả lời số <số> -----
+  // Pattern 2: reply to <number> / trả lời số <number>
   m = txt.match(/(?:reply to|trả lời (?:số)?) (\d+)\s+(.+)/i);
   if(m){
      const idx  = Number(m[1]);
@@ -264,7 +260,7 @@ function handleTranscript(raw){
      return;
   }
 
-  // ----- Enhanced: List messages command -----
+  // List messages command
   if (txt.includes("list") || txt.includes("hiển thị") || txt.includes("liệt kê")) {
     if (recentMsgs.length === 0) {
       speakFeedback("Không có tin nhắn nào.");
@@ -298,7 +294,6 @@ function handleTranscript(raw){
 }
 
 // ===== AUDIO PROCESSING =====
-// PRESERVING YOUR EXACT encodeWAV function
 function encodeWAV(audioBuffer) {
   const sampleRate = audioBuffer.sampleRate;
   const samples = audioBuffer.getChannelData(0);
@@ -335,7 +330,6 @@ function encodeWAV(audioBuffer) {
   return new Blob([view], { type: 'audio/wav' });
 }
 
-// PRESERVING YOUR EXACT transcribeAudio function
 async function transcribeAudio(audioBlob) {
   try {
     updateStatus("Transcribing audio...", "info");
@@ -371,7 +365,6 @@ async function transcribeAudio(audioBlob) {
 }
 
 // ===== VOICE RECORDING =====
-// PRESERVING YOUR EXACT detectSilence function
 function detectSilence(stream) {
   audioContext = new AudioContext();
   micSource = audioContext.createMediaStreamSource(stream);
@@ -414,7 +407,6 @@ function detectSilence(stream) {
   requestAnimationFrame(checkSilence);
 }
 
-// PRESERVING YOUR EXACT startRecording function
 async function startRecording() {
   try {
     log("🎤 Wake word detected - starting recording");
@@ -473,7 +465,6 @@ async function startRecording() {
   }
 }
 
-// PRESERVING YOUR EXACT stopRecording function
 function stopRecording(stream) {
   if (mediaRecorder && mediaRecorder.state === "recording") {
     mediaRecorder.stop();
@@ -491,7 +482,6 @@ function stopRecording(stream) {
 }
 
 // ===== WAKE WORD DETECTION =====
-// PRESERVING YOUR EXACT initializePorcupine function with Railway fallback
 async function initializePorcupine() {
   try {
     log("🐷 Initializing Porcupine wake word detection...");
@@ -531,11 +521,11 @@ async function initializePorcupine() {
   }
 }
 
-// Enhanced fallback for Railway deployment
+// Fallback for when Porcupine is not available
 function initializeFallbackRecording() {
   updateStatus("Click to record (Porcupine unavailable)", "warning");
   
-  // Add click-to-record button for Railway deployment
+  // Add click-to-record button
   const recordBtn = document.createElement('button');
   recordBtn.textContent = '🎤 Click to Record';
   recordBtn.style.cssText = `
@@ -571,9 +561,9 @@ function initializeFallbackRecording() {
 }
 
 // ===== INITIALIZATION =====
-// PRESERVING YOUR EXACT initialization approach
 async function initializeApp() {
   log("🚀 Initializing Telegram Voice Reply App");
+  log(`📡 Backend URL: ${BACKEND_URL}`);
   
   // Connect to WebSocket
   connectWebSocket();
@@ -581,7 +571,7 @@ async function initializeApp() {
   // Initialize wake word detection
   await initializePorcupine();
   
-  // Add some sample data for testing (preserving your exact approach)
+  // Add some sample data for testing
   setTimeout(() => {
     if (recentMsgs.length === 0) {
       log("📝 Adding sample messages for testing");
@@ -594,14 +584,12 @@ async function initializeApp() {
   log("✅ App initialization completed");
 }
 
-// ===== EXPORT FUNCTIONS FOR COMPATIBILITY =====
-// PRESERVING YOUR EXACT exports
+// ===== EXPORT FUNCTIONS =====
 window.handleTranscript = handleTranscript;
 window.addMessage = addMessage;
 window.sendReply = sendReply;
 
 // ===== START THE APP =====
-// PRESERVING YOUR EXACT DOMContentLoaded approach
 document.addEventListener('DOMContentLoaded', () => {
   // Add some CSS for status colors
   const style = document.createElement('style');
