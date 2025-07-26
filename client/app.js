@@ -559,36 +559,12 @@ function initializeFallbackRecording() {
     }
   });
 }
-// ===== ENVIRONMENT CHECK =====
-function checkEnvironment() {
-  console.group("🔍 Environment Check");
-  
-  if (!PORCUPINE_KEY || PORCUPINE_KEY.trim() === "") {
-    console.error("❌ Missing VITE_PORCUPINE_KEY - Porcupine wake word will not work.");
-    updateStatus("❌ Missing Porcupine key", "error");
-  } else {
-    console.log("✅ Porcupine key detected:", PORCUPINE_KEY.slice(0, 10) + "...");
-  }
-
-  if (!HF_TOKEN || HF_TOKEN.trim() === "") {
-    console.error("❌ Missing VITE_HF_TOKEN - Whisper API calls will fail.");
-    updateStatus("❌ Missing HuggingFace token", "error");
-  } else {
-    console.log("✅ HuggingFace token detected:", HF_TOKEN.slice(0, 10) + "...");
-  }
-
-  console.log("🌐 Backend URL:", BACKEND_URL);
-  console.groupEnd();
-}
 
 // ===== INITIALIZATION =====
 async function initializeApp() {
   log("🚀 Initializing Telegram Voice Reply App");
   log(`📡 Backend URL: ${BACKEND_URL}`);
-  
-  // Check env first
-  checkEnvironment();
-  
+    
   // Connect to WebSocket
   connectWebSocket();
   
