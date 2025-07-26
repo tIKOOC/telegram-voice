@@ -1,4 +1,5 @@
 // client/app.js - FIXED VERSION with correct Railway backend URL
+console.log("PORCUPINE_KEY:", PORCUPINE_KEY);
 
 // ===== CONFIGURATION =====
 // CRITICAL FIX: Point to Railway backend, NOT Vercel!
